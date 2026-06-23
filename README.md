@@ -37,7 +37,64 @@ If the learning plan changes, regenerate notes by re-running Exa + Context7 agai
 https://partner-academy.databricks.com/learn/learning-plans/315/generative-ai-engineering-pathway
 ```
 
-1. Use Exa to search for the updated learning plan content and pull the current module list.
-2. Use Context7 to fetch the full text of each module page.
-3. Paste the updated content into Claude Code and ask it to refresh the relevant `.md` files — the section files (`1_fundamentals.md` etc.) are organized to match the learning plan modules, so you can update them one at a time.
-4. Re-run `study_cheat_sheet.md`, `study_flashcards.md`, `study_practice_questions.md`, and `study_topic_summaries.md` last, as they are derived from the section files.
+### Step 1 — Pull fresh content with Exa
+
+Install the SDK and run the script below to fetch up-to-date content from the learning plan page.
+
+```bash
+pip install exa-py
+export EXA_API_KEY="your_key_here"
+```
+
+```python
+from exa_py import Exa
+
+exa = Exa(api_key=os.environ["EXA_API_KEY"])
+
+# Fetch the current module content directly from the learning plan URL
+results = exa.get_contents(
+    ["https://partner-academy.databricks.com/learn/learning-plans/315/generative-ai-engineering-pathway"],
+    text={"max_characters": 20000},
+    # maxAgeHours=0 forces a live crawl so you always get the latest version
+    max_age_hours=0,
+)
+
+print(results.results[0].text)
+```
+
+If you want to also search for supplementary Databricks GenAI content across the web:
+
+```python
+results = exa.search(
+    "Databricks Generative AI Engineer Associate exam topics 2025",
+    type="deep",
+    num_results=10,
+    contents={"highlights": True},
+)
+
+for r in results.results:
+    print(r.title, r.url)
+    print(r.highlights)
+```
+
+### Step 2 — Supplement with Context7
+
+In Claude Code, use the Context7 MCP tool to pull documentation for specific Databricks/MLflow APIs referenced in the notes (e.g. `mlflow`, `databricks-sdk`). This fills in implementation details that Exa's web crawl may not surface.
+
+### Step 3 — Refresh the markdown files
+
+Paste the Exa/Context7 output into Claude Code and ask it to update the relevant section files. The files map to the learning plan modules:
+
+| File | Module |
+|------|--------|
+| [1_fundamentals.md](1_fundamentals.md) | Generative AI Fundamentals |
+| [2_retrieval_agents.md](2_retrieval_agents.md) | Retrieval & Agents |
+| [3_single_agent_applications.md](3_single_agent_applications.md) | Single-Agent Applications |
+| [4_eval_govern.md](4_eval_govern.md) | Evaluation & Governance |
+| [5_deploy_monitor.md](5_deploy_monitor.md) | Deployment & Monitoring |
+
+Update the section files first, then regenerate the derived study files last:
+- [study_cheat_sheet.md](study_cheat_sheet.md)
+- [study_flashcards.md](study_flashcards.md)
+- [study_practice_questions.md](study_practice_questions.md)
+- [study_topic_summaries.md](study_topic_summaries.md)
